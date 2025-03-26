@@ -58,31 +58,82 @@ Este projeto utiliza diversas tecnologias:
 ## Etapa 2: Instalação do WordPress usando Docker Compose 
 
 ### 1. Instalação do Docker
-- Instale o **Docker** utilizando o gerenciador de pacotes do Amazon Linux:
+- Instale o **Docker** utilizando o gerenciador de pacotes do Amazon Linux seguindo os seguintes passos:
 
-  ```bash
+  - Atualize os pacotes instalados e o cache de pacotes em sua instância:
 
-  ```
+    ```bash
+      sudo yum update -y
+    ```
 
-- Verifique se o Docker foi instalado corretamente:
+  - Instale o mais recente Docker Pacote Community Edition:
 
-  ```bash
+    ```bash
+    sudo yum install -y docker
+    ```
 
-  ```
+  - Inicie o Docker:
+
+    ```bash
+    sudo service docker start
+    ```
+
+  - Adicione o ec2-user ao docker grupo para que você possa executar Docker comandos sem usar `sudo`:
+
+    ```bash
+    sudo usermod -a -G docker ec2-user
+    ```
+
+  - Obtenha as novas permissões de grupo docker efetuando logout e login novamente. Para fazer isso, feche a janela do terminal SSH atual e reconecte-se à sua instância em uma nova. Sua nova sessão SSH deverá ter as permissões de grupo docker apropriadas.
+
+  - Verifique se o ec2-user pode executar comandos do Docker sem usar o sudo.
+
+    ```bash
+    docker ps
+    ```
+
+  - Você deverá ver a saída a seguir, confirmando que o Docker está instalado e em execução:
+
+    ```bash
+    CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+    ```
 
 ### 2. Instalação do Docker Compose
 - Instale o **Docker Compose** utilizando o gerenciador de pacotes do Amazon Linux:
 
   ```bash
-
+  sudo curl -SL https://github.com/docker/compose/releases/download/v2.34.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+  sudo chmod +x /usr/local/bin/docker-compose
   ```
 
 - Verifique se o Docker Compose foi instalado corretamente:
 
   ```bash
-
+  docker-compose --version
   ```
 
   ### 3. Instalação do WordPress
-- Instale o **WordPress** e o Banco de Dados **MySQL** utilizando o **Docker Compose**:
+- Instale o **WordPress** utilizando o **Docker Compose**:
 
+  ```bash
+  docker pull wordpress
+  ```
+
+- Crie uma pasta para o projeto e navegue até ela:
+
+  ```bash
+  mkdir projeto-docker
+  cd projeto-docker
+  ```
+
+- Crie o arquivo `docker-compose` e adicione o script que está neste repositório, fazendo as alterações necessárias nas variáveis de ambiente:
+
+```bash
+nano docker-compose.yml
+```
+
+- Inicie a instalação do **WordPress** através do **Docker Compose**:
+
+```bash
+docker-compose up
+```
