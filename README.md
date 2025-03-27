@@ -58,45 +58,37 @@ Este projeto utiliza diversas tecnologias:
 ## Etapa 2: Instalação do WordPress usando Docker Compose 
 
 ### 1. Instalação do Docker
-- Instale o **Docker** utilizando o gerenciador de pacotes do Amazon Linux seguindo os seguintes passos:
+- Atualize os pacotes instalados e o cache de pacotes em sua instância:
 
-  - Atualize os pacotes instalados e o cache de pacotes em sua instância:
+  ```bash
+    sudo yum update -y
+  ```
 
-    ```bash
-      sudo yum update -y
-    ```
+- Instale o mais recente Docker Pacote Community Edition:
 
-  - Instale o mais recente Docker Pacote Community Edition:
+  ```bash
+  sudo yum install -y docker
+  ```
 
-    ```bash
-    sudo yum install -y docker
-    ```
+- Inicie o Docker:
 
-  - Inicie o Docker:
+  ```bash
+  sudo service docker start
+  ```
 
-    ```bash
-    sudo service docker start
-    ```
+- Adicione o ec2-user ao docker grupo para que você possa executar Docker comandos sem usar `sudo`:
 
-  - Adicione o ec2-user ao docker grupo para que você possa executar Docker comandos sem usar `sudo`:
+  ```bash
+  sudo usermod -a -G docker ec2-user
+  ```
 
-    ```bash
-    sudo usermod -a -G docker ec2-user
-    ```
+- Obtenha as novas permissões de grupo docker efetuando logout e login novamente. Para fazer isso, feche a janela do terminal SSH atual e reconecte-se à sua instância em uma nova. Sua nova sessão SSH deverá ter as permissões de grupo docker apropriadas.
 
-  - Obtenha as novas permissões de grupo docker efetuando logout e login novamente. Para fazer isso, feche a janela do terminal SSH atual e reconecte-se à sua instância em uma nova. Sua nova sessão SSH deverá ter as permissões de grupo docker apropriadas.
+- Verifique se o ec2-user pode executar comandos do Docker sem usar o sudo.
 
-  - Verifique se o ec2-user pode executar comandos do Docker sem usar o sudo.
-
-    ```bash
-    docker ps
-    ```
-
-  - Você deverá ver a saída a seguir, confirmando que o Docker está instalado e em execução:
-
-    ```bash
-    CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
-    ```
+  ```bash
+  docker ps
+  ```
 
 ### 2. Instalação do Docker Compose
 - Instale o **Docker Compose** utilizando o gerenciador de pacotes do Amazon Linux:
@@ -113,7 +105,7 @@ Este projeto utiliza diversas tecnologias:
   ```
 
   ### 3. Instalação do WordPress
-- Instale o **WordPress** utilizando o **Docker Compose**:
+- Instale a imagem oficial do **WordPress**:
 
   ```bash
   docker pull wordpress
@@ -128,12 +120,12 @@ Este projeto utiliza diversas tecnologias:
 
 - Crie o arquivo `docker-compose` e adicione o script que está neste repositório, fazendo as alterações necessárias nas variáveis de ambiente:
 
-```bash
-nano docker-compose.yml
-```
+  ```bash
+  nano docker-compose.yml
+  ```
 
 - Inicie a instalação do **WordPress** através do **Docker Compose**:
 
-```bash
-docker-compose up
-```
+  ```bash
+  docker-compose up
+  ```
