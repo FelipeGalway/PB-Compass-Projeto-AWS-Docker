@@ -76,22 +76,22 @@ Este projeto utiliza diversas tecnologias:
   sudo service docker start
   ```
 
-- Adicione o ec2-user ao docker grupo para que você possa executar Docker comandos sem usar `sudo`:
+- Adicione o ec2-user ao grupo do Docker para que você possa executar os comandos sem usar `sudo`:
 
   ```bash
   sudo usermod -a -G docker ec2-user
   ```
 
-- Obtenha as novas permissões de grupo docker efetuando logout e login novamente. Para fazer isso, feche a janela do terminal SSH atual e reconecte-se à sua instância em uma nova. Sua nova sessão SSH deverá ter as permissões de grupo docker apropriadas.
+- Obtenha as novas permissões efetuando logout e login novamente. 
 
-- Verifique se o ec2-user pode executar comandos do Docker sem usar o sudo.
+- Após iniciar nova conexão SSH, verifique se o `ec2-user` pode executar comandos do Docker sem usar o `sudo`:
 
   ```bash
   docker ps
   ```
 
 ### 2. Instalação do Docker Compose
-- Instale o **Docker Compose** utilizando o gerenciador de pacotes do Amazon Linux:
+- Instale o **Docker Compose** utilizando os seguintes comandos:
 
   ```bash
   sudo curl -SL https://github.com/docker/compose/releases/download/v2.34.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
@@ -118,7 +118,7 @@ Este projeto utiliza diversas tecnologias:
   cd projeto-docker
   ```
 
-- Crie o arquivo `docker-compose` e adicione o script que está neste repositório, fazendo as alterações necessárias nas variáveis de ambiente:
+- Crie o arquivo `docker-compose.yml` e adicione o script que está neste repositório, fazendo as alterações necessárias nas variáveis de ambiente:
 
   ```bash
   nano docker-compose.yml
@@ -127,5 +127,21 @@ Este projeto utiliza diversas tecnologias:
 - Inicie a instalação do **WordPress** através do **Docker Compose**:
 
   ```bash
-  docker-compose up
+  docker-compose up -d
   ```
+
+### 4.: Utilizando o User Data 
+Como alternativa, é possível utilizar o User Data durante a criação da instância EC2 para iniciar a instância com tudo já instalado e pronto para ser executado. Para fazer isso, siga os seguintes passos:
+- Crie uma nova instância seguindo os passos de criação da instância anterior.
+- Durante o processo de criação, acesse a seção **Advanced Details** e role até a parte inferior até encontrar **User Data**.
+- Cole o script presente neste repositório no campo de User Data, alterando as variáveis de ambiente para a conexão com o Banco de Dados.
+- Finalize a criação da instância clicando em **Launch instance**.
+- Para que estabeleça uma conexão do Banco de Dados RDS com a nova instância:
+  - Navegue até a seção **Aurora and RDS**, depois **Databases** e acesse o Banco de Dados criado anteriormente.
+  - Na seção **Connectivity & security**, role até **Connected compute resources**, clique em **Set up EC2 connection**, escolha a instância nova criada e finalize clicando em **Continue**. 
+
+Com essa abordagem, não será necessário realizar manualmente a instalação do Docker, do Docker Compose e do WordPress, pois a instância será iniciada com tudo já instalado.
+
+---
+
+## Etapa 3: 
