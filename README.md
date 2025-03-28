@@ -30,6 +30,7 @@ Este projeto utiliza diversas tecnologias:
 - Configure as regras de entrada nas seguintes portas:
     - **HTTP** (porta 80)
     - **SSH** (porta 22)
+    - **NFS** (porta 2049)
 - Nas regras de saída, configure **All Traffic**, permitindo acesso ao IP `0.0.0.0/0`.
 
 ### 3. Criação de uma Instância EC2
@@ -46,7 +47,12 @@ Este projeto utiliza diversas tecnologias:
 - Configure o Banco de Dados e associe-o à instância criada no passo anterior, na seção **Connectivity**.
 - Finalize a criação clicando em **Create database**.
 
-### 5. Acesso à Instância EC2 via SSH
+### 5. Criação do Sistema de Arquivos EFS
+- Navegue até a seção **EFS** e clique em **Create file system**.
+- Escolha a VPC e as sub-redes onde o EFS será montado, garantindo que ele esteja na mesma VPC das instâncias EC2 e do RDS para comunicação interna.
+- Finalize clicando em **Create**.
+
+### 6. Acesso à Instância EC2 via SSH
 - Acesse a instância via SSH para realizar as configurações necessárias.
 - A conexão pode ser realizada utilizando o **Visual Studio Code** da seguinte maneira: 
   - Selecione a instância na AWS e clique em **Connect**. 
@@ -104,7 +110,28 @@ Este projeto utiliza diversas tecnologias:
   docker-compose --version
   ```
 
-  ### 3. Instalação do WordPress
+### 3. Configurando o Ponto de Montagem
+- Instale o cliente Amazon EFS utilizando o seguinte comando:
+
+  ```bash
+  sudo yum install -y amazon-efs-utils
+  ```
+
+- Crie uma pasta para ser o ponto de montagem:
+
+  ```bash
+  sudo mkdir efs
+  ```
+
+- Configure a montagem usando o ID do sistema de arquivos:
+
+  ```bash
+  sudo mount -t <efs file-system-id> <efs-mount-point>/
+  ```
+
+- Use o ID do sistema de arquivos que você está montando no local `file-system-id` e a pasta configurada no passo anterior no lugar do `efs-mount-point`.
+
+### 4. Instalação do WordPress
 - Instale a imagem oficial do **WordPress**:
 
   ```bash
@@ -130,18 +157,18 @@ Este projeto utiliza diversas tecnologias:
   docker-compose up -d
   ```
 
-### 4.: Utilizando o User Data 
+### 5. Utilizando o User Data 
 Como alternativa, é possível utilizar o User Data durante a criação da instância EC2 para iniciar a instância com tudo já instalado e pronto para ser executado. Para fazer isso, siga os seguintes passos:
 - Crie uma nova instância seguindo os passos de criação da instância anterior.
 - Durante o processo de criação, acesse a seção **Advanced Details** e role até a parte inferior até encontrar **User Data**.
-- Cole o script presente neste repositório no campo de User Data, alterando as variáveis de ambiente para a conexão com o Banco de Dados.
+- Cole o script presente neste repositório no campo de User Data (lembre-se de acrescentar o ID do sistema de arquivos EFS e também as variáveis de ambiente para a conexão com o Banco de Dados).
 - Finalize a criação da instância clicando em **Launch instance**.
 - Para que estabeleça uma conexão do Banco de Dados RDS com a nova instância:
   - Navegue até a seção **Aurora and RDS**, depois **Databases** e acesse o Banco de Dados criado anteriormente.
-  - Na seção **Connectivity & security**, role até **Connected compute resources**, clique em **Set up EC2 connection**, escolha a instância nova criada e finalize clicando em **Continue**. 
+  - Na seção **Connectivity & security**, role até **Connected compute resources**, expanda **Actions**, clique em **Set up EC2 connection**, escolha a instância nova criada e finalize clicando em **Continue**. 
 
-Com essa abordagem, não será necessário realizar manualmente a instalação do Docker, do Docker Compose e do WordPress, pois a instância será iniciada com tudo já instalado.
+Com essa abordagem, não será necessário realizar manualmente a instalação do Docker, do Docker Compose e do WordPress, nem configurar o ponto de montagem, pois a instância será iniciada com tudo já instalado e configurado.
 
 ---
 
-## Etapa 3: 
+## Etapa 3: Configuração Final do Ambiente na AWS

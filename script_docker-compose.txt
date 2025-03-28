@@ -9,9 +9,8 @@ services:
       WORDPRESS_DB_USER: <db_user>        
       WORDPRESS_DB_PASSWORD: <db_password> 
     ports:
-      - 80:80
+      - "80:80"
     volumes:
-      - wordpress_data:/var/www/html
-
+      - /mnt/efs:/var/www/html
 volumes:
   wordpress_data:
