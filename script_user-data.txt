@@ -33,7 +33,7 @@ services:
     ports:
       - 80:80
     volumes:
-      - wordpress_data:/var/www/html
+      - /mnt/efs:/var/www/html
 
 volumes:
   wordpress_data:

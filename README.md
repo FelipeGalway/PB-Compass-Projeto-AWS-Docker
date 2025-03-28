@@ -15,22 +15,21 @@ Este projeto utiliza diversas tecnologias:
 ## Etapa 1: Configuração Inicial do Ambiente na AWS
 
 ### 1. Criação de uma VPC na AWS
-- Criação da **VPC**:
-  - Acesse a seção **VPC** e depois **Your VPCs**. 
-  - Clique em **Create VPC** e selecione a opção **VPC and more**. 
-  - Configure a VPC com **2 sub-redes públicas** e **2 sub-redes privadas**.
-  - Vá até a seção **Internet Gateways** e verifique se o Internet Gateway criado está associado à VPC criada anteriormente. 
-  - Caso o internet Gateway não esteja associado, associe-o seguindo os seguintes passos:
-    - Selecione o Internet Gateway.
-    - Clique em **Actions**.
-    - Clique em **Attach to VPC** e escolha a VPC criada.
+- Acesse a seção **VPC** e depois **Your VPCs**. 
+- Clique em **Create VPC** e selecione a opção **VPC and more**. 
+- Configure a VPC com **2 sub-redes públicas** e **2 sub-redes privadas**.
+- Vá até a seção **Internet Gateways** e verifique se o Internet Gateway criado está associado à VPC criada anteriormente. 
+- Caso o internet Gateway não esteja associado, associe-o seguindo os seguintes passos:
+  - Selecione o Internet Gateway.
+  - Clique em **Actions**.
+  - Clique em **Attach to VPC** e escolha a VPC criada.
 
 ### 2. Configuração do Security Group
 - Navegue até a seção **EC2** em **Security Groups** e selecione o grupo associado à VPC criada.
 - Configure as regras de entrada nas seguintes portas:
-    - **HTTP** (porta 80)
-    - **SSH** (porta 22)
-    - **NFS** (porta 2049)
+  - **HTTP** (porta 80)
+  - **SSH** (porta 22)
+  - **NFS** (porta 2049)
 - Nas regras de saída, configure **All Traffic**, permitindo acesso ao IP `0.0.0.0/0`.
 
 ### 3. Criação de uma Instância EC2
@@ -165,7 +164,7 @@ Como alternativa, é possível utilizar o User Data durante a criação da inst�
 - Finalize a criação da instância clicando em **Launch instance**.
 - Para que estabeleça uma conexão do Banco de Dados RDS com a nova instância:
   - Navegue até a seção **Aurora and RDS**, depois **Databases** e acesse o Banco de Dados criado anteriormente.
-  - Na seção **Connectivity & security**, role até **Connected compute resources**, expanda **Actions**, clique em **Set up EC2 connection**, escolha a instância nova criada e finalize clicando em **Continue**. 
+  - Na seção **Connectivity & security**, role até **Connected compute resources**, expanda **Actions**, clique em **Set up EC2 connection**, escolha a nova instância criada e finalize clicando em **Continue**. 
 
 Com essa abordagem, não será necessário realizar manualmente a instalação do Docker, do Docker Compose e do WordPress, nem configurar o ponto de montagem, pois a instância será iniciada com tudo já instalado e configurado.
 
