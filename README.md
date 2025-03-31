@@ -15,7 +15,7 @@ Este projeto utiliza diversas tecnologias:
 ## Etapa 1: Configuração Inicial do Ambiente na AWS
 
 ### 1. Criação de uma VPC na AWS
-- Acesse a seção **VPC** e depois **Your VPCs**. 
+- Acesse o Console AWS e vá para a seção **VPC** e depois **Your VPCs**. 
 - Clique em **Create VPC** e selecione a opção **VPC and more**. 
 - Configure a VPC com **2 sub-redes públicas** e **2 sub-redes privadas**.
 - Vá até a seção **Internet Gateways** e verifique se o Internet Gateway criado está associado à VPC criada anteriormente. 
@@ -125,10 +125,10 @@ Este projeto utiliza diversas tecnologias:
 - Configure a montagem usando o ID do sistema de arquivos:
 
   ```bash
-  sudo mount -t <efs file-system-id> <efs-mount-point>/
+  sudo mount -t efs <efs file-system-id>:/ /home/ec2-user/efs/
   ```
 
-- Use o ID do sistema de arquivos que você está montando no local `file-system-id` e a pasta configurada no passo anterior no lugar do `efs-mount-point`.
+- Use o ID do sistema de arquivos que você está montando no local `<efs file-system-id>`.
 
 ### 4. Instalação do WordPress
 - Instale a imagem oficial do **WordPress**:
@@ -158,7 +158,7 @@ Este projeto utiliza diversas tecnologias:
 
 ### 5. Utilizando o User Data 
 Como alternativa, é possível utilizar o User Data durante a criação da instância EC2 para iniciar a instância com tudo já instalado e pronto para ser executado. Para fazer isso, siga os seguintes passos:
-- Crie uma nova instância seguindo os passos de criação da instância anterior.
+- Crie uma nova instância seguindo os passos de criação da instância anterior, mas selecionando uma sub-rede de outra Zona de Disponibilidade.
 - Durante o processo de criação, acesse a seção **Advanced Details** e role até a parte inferior até encontrar **User Data**.
 - Cole o script presente neste repositório no campo de User Data (lembre-se de acrescentar o ID do sistema de arquivos EFS e também as variáveis de ambiente para a conexão com o Banco de Dados).
 - Finalize a criação da instância clicando em **Launch instance**.
@@ -171,3 +171,36 @@ Com essa abordagem, não será necessário realizar manualmente a instalação d
 ---
 
 ## Etapa 3: Configuração Final do Ambiente na AWS
+
+### 1. Criação do Target Group
+- Acesse novamente o Console da AWS e vá para a seção de **EC2**.
+- No menu esquerdo, em **Load Balancing**, clique em **Target Groups** e depois em **Create target group**.
+- Selecione **Instances** (porque suas instâncias EC2 serão os alvos).
+- Preencha as configurações do Target Group:
+  - **Target group name**: dê um nome de sua preferência. 
+  - **Protocol: Port**: selecione HTTP e porta 80.
+  - **VPC**: escolha a mesma VPC das instâncias EC2.
+  - **Health checks**: deixe **protocol** como HTTP e **path** como /.
+  - Deixe as outras configurações no padrão e clique em **Next**.
+
+- Selecione as duas instâncias e clique em **Include as pending below**.
+- Finalize a criação clicando em **Create target group**.
+
+### 2. Criação do Load Balancer 
+- Continue na seção de **EC2**, em **Load Balancing**, clique em **Load Balancers** e depois em **Create load balancer**.
+- Escolha **Application Load Balancer** e clique em **Create**.
+- Preencha as configurações básicas do ALB:
+  - **Load balancer name**: dê um nome da sua preferência.
+  - **Scheme**: escolha Internet-facing.
+  - **Load balancer IP address type**: escolha IPv4.
+  - **VPC**: escolha a VPC onde suas instâncias EC2 estão.
+  - **Availability Zones and subnets**: selecione as duas sub-redes públicas que estão suas instâncias para que o ALB possa distribuir o tráfego.
+  - **Listeners and routing**: escolha HTTP na porta 80 e selecione o Target Group criado no passo anterior.
+
+- Finalize a criação clicando em **Create load balancer**.
+- Após finalizada, teste se o WordPress está acessível da seguinte maneira:  
+  - Selecione o Load Balancer criado, na seção **Details** e role até encontrar o **DNS name**.
+  - Copie o DNS e cole em uma aba no seu navaegador.
+  - Se tudo foi configurado corretamente, verá a página do WordPress no seu navegador. 
+
+### 3. Criação do  
