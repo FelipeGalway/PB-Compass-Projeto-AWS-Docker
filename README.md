@@ -46,9 +46,8 @@ Este projeto utiliza diversas tecnologias:
 - Associe o banco de dados à instância EC2 criada no passo anterior, na seção **Connectivity**.
 - Finalize a criação clicando em **Create database**.
 - Após a criação, estabeleça uma conexão do banco de dados com a instância da seguinte maneira:
-  - Na seção **Connectivity & security**, role até **Connected compute resources**.
-  - Expanda a seção **Actions** e clique em **Set up EC2 connection**.
-  - Escolha a instância criada e finalize clicando em **Continue**. 
+  - Na seção **Connectivity & security**, role até **Connected compute resources**. 
+  - Clique em **Actions** > **Set up EC2 connection**, escolha a instância criada e finalize clicando em **Continue**. 
 
 ### 5. Criação do Sistema de Arquivos EFS
 - Navegue até a seção **EFS** e clique em **Create file system**.
