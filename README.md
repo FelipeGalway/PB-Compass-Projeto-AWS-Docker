@@ -45,25 +45,29 @@ Este projeto utiliza diversas tecnologias:
 - Clique em **Create database** e selecione **MySQL**. 
 - Configure o Banco de Dados e associe-o à instância criada no passo anterior, na seção **Connectivity**.
 - Finalize a criação clicando em **Create database**.
+- Estabeleça uma conexão do Banco de Dados criado com a instância da seguinte maneira:
+  - Na seção **Connectivity & security**, role até **Connected compute resources**.
+  - Expanda a seção **Actions** e clique em **Set up EC2 connection**.
+  - Escolha a instância criada e finalize clicando em **Continue**. 
 
 ### 5. Criação do Sistema de Arquivos EFS
 - Navegue até a seção **EFS** e clique em **Create file system**.
-- Escolha a VPC e as sub-redes onde o EFS será montado, garantindo que ele esteja na mesma VPC das instâncias EC2 e do RDS para comunicação interna.
-- Finalize clicando em **Create**.
-
-### 6. Acesso à Instância EC2 via SSH
-- Acesse a instância via SSH para realizar as configurações necessárias.
-- A conexão pode ser realizada utilizando o **Visual Studio Code** da seguinte maneira: 
-  - Selecione a instância na AWS e clique em **Connect**. 
-  - Copie o comando exibido no campo **SSH Client** e cole no terminal do VS Code. 
-  - Substitua `"nome_da_chave"` pelo caminho correto da chave, que deverá estar em `C:\Users\seu_usuario\.ssh`.
+- Escolha a **VPC** onde o EFS será montado, garantindo que esteja na mesma VPC das instâncias EC2 e do RDS para comunicação interna.
+- Finalize clicando em **Create file system**.
 
 ---
 
 ## Etapa 2: Instalação do WordPress usando Docker Compose 
 
-### 1. Instalação do Docker
-- Atualize os pacotes instalados e o cache de pacotes em sua instância:
+### 1. Acesso à Instância EC2 via SSH
+- Acesse a instância via SSH para realizar as configurações e instalações necessárias.
+- A conexão pode ser realizada utilizando o **Visual Studio Code** da seguinte maneira: 
+  - Selecione a instância na AWS e clique em **Connect**. 
+  - Copie o comando exibido no campo **SSH Client** e cole no terminal do VS Code. 
+  - Substitua `"nome_da_chave"` pelo caminho correto da chave, que deverá estar em `C:\Users\seu_usuario\.ssh`.
+
+### 2. Instalação do Docker
+- Atualize os pacotes instalados e o cache de pacotes na instância:
 
   ```bash
     sudo yum update -y
@@ -95,7 +99,7 @@ Este projeto utiliza diversas tecnologias:
   docker ps
   ```
 
-### 2. Instalação do Docker Compose
+### 3. Instalação do Docker Compose
 - Instale o **Docker Compose** utilizando os seguintes comandos:
 
   ```bash
@@ -109,7 +113,7 @@ Este projeto utiliza diversas tecnologias:
   docker-compose --version
   ```
 
-### 3. Configurando o Ponto de Montagem
+### 4. Configurando o Ponto de Montagem
 - Instale o cliente Amazon EFS utilizando o seguinte comando:
 
   ```bash
@@ -130,7 +134,7 @@ Este projeto utiliza diversas tecnologias:
 
 - Use o ID do sistema de arquivos que você está montando no local `<efs file-system-id>`.
 
-### 4. Instalação do WordPress
+### 5. Instalação do WordPress
 - Instale a imagem oficial do **WordPress**:
 
   ```bash
@@ -156,15 +160,13 @@ Este projeto utiliza diversas tecnologias:
   docker-compose up -d
   ```
 
-### 5. Utilizando o User Data 
+### 6. Utilizando o User Data 
 Como alternativa, é possível utilizar o User Data durante a criação da instância EC2 para iniciar a instância com tudo já instalado e pronto para ser executado. Para fazer isso, siga os seguintes passos:
 - Crie uma nova instância seguindo os passos de criação da instância anterior, mas selecionando uma sub-rede de outra Zona de Disponibilidade.
 - Durante o processo de criação, acesse a seção **Advanced Details** e role até a parte inferior até encontrar **User Data**.
 - Cole o script presente neste repositório no campo de User Data (lembre-se de acrescentar o ID do sistema de arquivos EFS e também as variáveis de ambiente para a conexão com o Banco de Dados).
 - Finalize a criação da instância clicando em **Launch instance**.
-- Para que estabeleça uma conexão do Banco de Dados RDS com a nova instância:
-  - Navegue até a seção **Aurora and RDS**, depois **Databases** e acesse o Banco de Dados criado anteriormente.
-  - Na seção **Connectivity & security**, role até **Connected compute resources**, expanda **Actions**, clique em **Set up EC2 connection**, escolha a nova instância criada e finalize clicando em **Continue**. 
+- Para que estabeleça a conexão do Banco de Dados RDS com a nova instância da mesma maneira que foi feita anteriormente.
 
 Com essa abordagem, não será necessário realizar manualmente a instalação do Docker, do Docker Compose e do WordPress, nem configurar o ponto de montagem, pois a instância será iniciada com tudo já instalado e configurado.
 
@@ -172,35 +174,25 @@ Com essa abordagem, não será necessário realizar manualmente a instalação d
 
 ## Etapa 3: Configuração Final do Ambiente na AWS
 
-### 1. Criação do Target Group
+### 1. Criação do Load Balancer
 - Acesse novamente o Console da AWS e vá para a seção de **EC2**.
-- No menu esquerdo, em **Load Balancing**, clique em **Target Groups** e depois em **Create target group**.
-- Selecione **Instances** (porque suas instâncias EC2 serão os alvos).
-- Preencha as configurações do Target Group:
-  - **Target group name**: dê um nome de sua preferência. 
-  - **Protocol: Port**: selecione HTTP e porta 80.
-  - **VPC**: escolha a mesma VPC das instâncias EC2.
-  - **Health checks**: deixe **protocol** como HTTP e **path** como /.
-  - Deixe as outras configurações no padrão e clique em **Next**.
+- No menu esquerdo, em **Load Balancing**, clique em **Load Balancers** e depois em **Create load balancer**.
+- Escolha **Classic Load Balancer** e clique em **Create**.
+- Configuração do Load Balancer:
+  - **Scheme**: escolha Internet-facing para um Load Balancer acessível externamente.
+  - Escolha a **VPC** onde as suas instâncias EC2 estão localizadas.
+  - Selecione as Availability Zones e as sub-redes públicas usadas para as instâncias EC2.
+  - **Security groups**: selecione o Security Group usado para as instâncias.
+  - **Listeners and routing**: defina o Listener para HTTP na porta 80.
+  - **Health Checks**: defina Ping protocol para HTTP, Ping port para 80 e Ping path como `/wp-admin/install.php`.
+  - **Advanced health check settings**: defina Response timeout para 5 segundos, Interval para 30 segundos e Healthy threshold para 3 (mantenha Unhealthy threshold como 2).
+  - **Instances**: selecione as instâncias EC2 criadas para associar ao Load Balancer.  
+  - Clique em **Create load balancer** para finalizar.
 
-- Selecione as duas instâncias e clique em **Include as pending below**.
-- Finalize a criação clicando em **Create target group**.
+- Após a criação, selecione o Load Balancers, vá na seção **Details** e copie o **DNS name**.
+- O WordPress estará acessível utilizando o DNS no navegador.
 
-### 2. Criação do Load Balancer 
-- Continue na seção de **EC2**, em **Load Balancing**, clique em **Load Balancers** e depois em **Create load balancer**.
-- Escolha **Application Load Balancer** e clique em **Create**.
-- Preencha as configurações básicas do ALB:
-  - **Load balancer name**: dê um nome da sua preferência.
-  - **Scheme**: escolha Internet-facing.
-  - **Load balancer IP address type**: escolha IPv4.
-  - **VPC**: escolha a VPC onde suas instâncias EC2 estão.
-  - **Availability Zones and subnets**: selecione as duas sub-redes públicas que estão suas instâncias para que o ALB possa distribuir o tráfego.
-  - **Listeners and routing**: escolha HTTP na porta 80 e selecione o Target Group criado no passo anterior.
+### 2. Criação do Auto Scaling  
 
-- Finalize a criação clicando em **Create load balancer**.
-- Após finalizada, teste se o WordPress está acessível da seguinte maneira:  
-  - Selecione o Load Balancer criado, na seção **Details** e role até encontrar o **DNS name**.
-  - Copie o DNS e cole em uma aba no seu navaegador.
-  - Se tudo foi configurado corretamente, verá a página do WordPress no seu navegador. 
 
-### 3. Criação do  
+
