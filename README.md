@@ -26,7 +26,10 @@ Este projeto utiliza diversas tecnologias:
   - Marque a opção **Enable auto-assign public IPv4 address** e depois clique em **Save**.
   - Repita o processo para a outra sub-rede pública.
 
-### 2. Configuração do Security Group
+### 2. Configuração e Criação dos Security Groups
+- Para este projeto serão usados dois grupos de segurança, um padrão criado junto com a VPC e outro que será usado apenas com o Load Balancer.
+
+1. **Security Group Padrão**
 - No menu lateral, vá para **Security Groups** e selecione o grupo associado à VPC criada.
 - Configure as regras de entrada nas seguintes portas:
   - **HTTP (porta 80)**: acesso restrito ao seu IP.
@@ -34,6 +37,13 @@ Este projeto utiliza diversas tecnologias:
   - **Custom TCP (porta 2049 - NFS)**: acesso restrito ao IPv4 CIDR da sua VPC.
 
 - Nas regras de saída, permita **All Traffic** com o destino `0.0.0.0/0`.
+
+2. **Security Group do Load Balancer**
+- Crie um novo **Security Group** para o Load Balancer clicando em **Create security group**:
+  - Personalize o nome e a descrição.
+  - **Regras de entrada**: configure uma regra HTTP na porta 80, permitindo tráfego de origem `0.0.0.0/0`.
+  - **Regras de saída**: permita **All Traffic** com o destino `0.0.0.0/0`.
+  - Edite as regras de entrada do grupo de segurança padrão, permitindo tráfego **HTTP** na porta 80, mas apenas a partir do grupo de segurança criado para o Load Balancer.
 
 ### 3. Criação do Banco de Dados no RDS 
 - Vá para **Aurora and RDS** > **Databases** e clique em **Create database**.
@@ -179,31 +189,22 @@ Caso prefira instalar o WordPress manualmente, siga os passos abaixo:
   - **Scheme**: Internet-facing.
   - **VPC**: escolha a VPC onde as suas instâncias EC2 estão localizadas.
   - **Availability Zones**: selecione as zonas de disponibilidade e as sub-redes públicas usadas pelas instâncias EC2.
+  - **Security groups**: associe ao grupo de segurança criado para o Load Balancer.
+  - **Listeners and routing**: defina para HTTP na porta 80.
+  - **Health Checks**: configure os parâmetros da seguinte maneira:
+    - **Ping protocol**: escolha HTTP.
+    - **Ping port**: defina 80.
+    - **Ping path**: insira `/wp-admin/install.php`.
 
-- **Security groups**: 
-  - Crie um novo **Security Group** com as seguintes configurações:
-    - **Regras de entrada**: configure uma regra HTTP na porta 80, permitindo tráfego de origem `0.0.0.0/0`.
-    - **Regras de saída**: permita **All Traffic** com o destino `0.0.0.0/0`.
+  - **Advanced health check settings**: defina os seguintes parâmetros:
+    - **Response timeout**: 5 segundos.
+    - **Interval**: 30 segundos.
+    - **Healthy threshold**: 3. 
+    - **Unhealthy threshold**: 2.
 
-- **Listeners and routing**: defina para HTTP na porta 80.
-- **Health Checks**: configure os parâmetros da seguinte maneira:
-  - **Ping protocol**: escolha HTTP.
-  - **Ping port**: defina 80.
-  - **Ping path**: insira `/wp-admin/install.php`.
-
-- **Advanced health check settings**: defina os seguintes parâmetros:
-  - **Response timeout**: 5 segundos.
-  - **Interval**: 30 segundos.
-  - **Healthy threshold**: 3. 
-  - **Unhealthy threshold**: 2.
-
-- Associe o Load Balancer às instâncias EC2.  
+- Associe o Load Balancer às instâncias EC2.
 - Clique em **Create load balancer** para finalizar.
-- **Configuração final de segurança**:
-  - Após a criação, vá até **Security Groups**.
-  - Edite as regras de entrada do grupo de segurança original, permitindo tráfego **HTTP** na porta 80, mas apenas a partir do grupo de segurança criado para o Load Balancer.
-
-- Volte até à página do Load Balancer e, na seção **Details**, copie o **DNS name**.
+- Após a criação, na seção **Details**, copie o **DNS name**.
 - Use o **DNS name** no navegador para acessar a aplicação WordPress.
 
 ### 9. Criação do Auto Scaling Group
