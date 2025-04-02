@@ -31,8 +31,7 @@ Este projeto utiliza diversas tecnologias:
 
 1. **Security Group Padrão**
 - No menu lateral, vá para **Security Groups** e selecione o grupo associado à VPC criada.
-- Configure as regras de entrada nas seguintes portas:
-  - **HTTP (porta 80)**: acesso restrito ao seu IP.
+- Configure as regras de entrada nas seguintes portas:  
   - **SSH (porta 22)**: acesso restrito ao seu IP.
   - **Custom TCP (porta 2049 - NFS)**: acesso restrito ao IPv4 CIDR da sua VPC.
 
@@ -59,14 +58,15 @@ Este projeto utiliza diversas tecnologias:
 
 ### 4. Criação do Sistema de Arquivos EFS
 - Acesse a seção **EFS** e clique em **Create file system**.
-- Selecione a **VPC** criada e finalize a criação clicando em **Create file system**.
+- Selecione a **VPC** criada e as duas sub-redes públicas. 
+- Finalize a criação clicando em **Create file system**.
 
 ### 5. Criação de uma Instância EC2
 - No Console EC2, clique em **Launch instance**.
 - Adicione as tags necessárias e utilize a **Amazon Linux 2023 AMI**.
 - Crie e vincule uma chave SSH **.pem** para acesso à instância.
 - Associe a instância à VPC criada, colocando-a em uma sub-rede pública.
-- Associe a instância ao **Security Group** configurado.
+- Associe a instância ao **Security Group** padrão.
 - Use o script de **User Data** disponível neste repositório, fazendo as seguintes alterações:
   - Substitua `<efs file-system-id>` pelo ID do sistema de arquivos EFS.
   - Substitua `<RDS-ENDPOINT>` pelo endpoint do banco de dados.
@@ -202,12 +202,31 @@ Caso prefira instalar o WordPress manualmente, siga os passos abaixo:
     - **Healthy threshold**: 3. 
     - **Unhealthy threshold**: 2.
 
-- Associe o Load Balancer às instâncias EC2.
-- Clique em **Create load balancer** para finalizar.
-- Após a criação, na seção **Details**, copie o **DNS name**.
-- Use o **DNS name** no navegador para acessar a aplicação WordPress.
+- Associe o Load Balancer às instâncias EC2 e clique em **Create load balancer** para finalizar.
+- Após a criação, na seção **Details**, copie o **DNS name** e cole-o no navegador para acessar a aplicação WordPress.
 
 ### 9. Criação do Auto Scaling Group
+1. **Criação do Launch Template**
+- No menu lateral, acesse **Launch Templates** > **Create launch template**.
+- Personalize com o nome e a descrição.
+- Selecione a **Amazon Linux 2023 AMI** e **t2.micro**, para que as instâncias geradas fiquem iguais às criadas anteriormente.
+- Vincule a mesma chave SSH **.pem** e o **Security Group** padrão.
+- Adicione as tags necessárias.
+- Cole o script de **User Data** e faça as alterações necessárias, conforme feito anteriormente.
+- Finalize a criação clicando em **Create launch template**.
+
+2. **Criação do Auto Scaling Group**
+- No menu lateral, acesse **Auto Scaling Groups** > **Create Auto Scaling group**.
+- Selecione o **Launch Template** criado anteriormente.
+- Selecione a VPC e as duas sub-redes públicas.
+- Escolha o **Load Balancer** criado e marque a opção **Turn on Elastic Load Balancing health checks**.
+- Configure a capacidade da seguinte maneira:
+  - **Desired capacity**: 2.
+  - **Min desired capacity**: 2.
+  - **Max desired capacity**: 4.
+
+- Selecione **Target tracking scaling policy** e mude **Target value** para 80. 
+- Continue seguindo e finalize a criação clicando em **Create Auto Scaling group**. 
 
 
 
