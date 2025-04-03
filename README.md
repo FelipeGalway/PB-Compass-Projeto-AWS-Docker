@@ -1,9 +1,12 @@
 # PB-Compass-Projeto-AWS-Docker
-Este projeto foi desenvolvido como parte do programa de bolsas de DevSecOps da Compass Uol. O objetivo é implementar uma solução de infraestrutura utilizando **AWS** e **Docker**, com foco no deploy de uma aplicação **WordPress** em contêiner. A solução envolve a configuração de uma instância **EC2**, a instalação do **Docker**, e o uso de **Amazon RDS** e **EFS** para suportar a aplicação.
+
+Este projeto foi desenvolvido como parte do programa de bolsas de **DevSecOps** da **Compass Uol**. O objetivo é implementar uma solução de infraestrutura na **AWS** utilizando **Docker** para o deploy de uma aplicação **WordPress** em contêiner. A solução envolve a configuração de instâncias **EC2** através de um **Auto Scaling Group** e de um **Load Balancer**, a instalação do **Docker**, e  integração com **Amazon RDS** e **EFS** para garantir a persistência de dados e armazenamento compartilhado entre os contêineres.
+
+---
 
 ## Tecnologias Utilizadas
 
-Este projeto utiliza diversas tecnologias:
+São utilizadas diversas tecnologias:
 - **Amazon VPC**: para criar redes e sub-redes na AWS.
 - **AWS EC2**: para provisionar e gerenciar instâncias virtuais.
 - **Amazon Linux 2023**: sistema operacional utilizado na instância EC2.
@@ -11,6 +14,9 @@ Este projeto utiliza diversas tecnologias:
 - **Docker Compose**: para facilitar a configuração dos contêineres.
 - **Amazon RDS (MySQL)**: para gerenciar o banco de dados da aplicação.
 - **Amazon EFS**: para armazenamento compartilhado entre contêineres.
+- **Classic Load Balancer (CLB)**: para distribuir o tráfego entre as instâncias de aplicação.
+- **Auto Scaling**: permitir escalar automaticamente as instâncias conforme a demanda de tráfego.
+- **CloudWatch**: para monitoramento e alarmes, acompanhando métricas como uso de CPU.
 
 ---
 
@@ -20,29 +26,37 @@ Este projeto utiliza diversas tecnologias:
 - Acesse o Console AWS e vá para a seção **VPC**. 
 - Clique em **Create VPC** e selecione a opção **VPC and more**. 
 - Crie uma VPC com **2 sub-redes públicas** e **2 sub-redes privadas**.
-- Certifique-se de que o **Internet Gateway** está associado à VPC. Caso não esteja, selecione o gateway, clique em **Actions** > **Attach to VPC** e associe-o à VPC criada.
-- Para permitir a criação de instâncias com IP público automaticamente, configure as sub-redes::
-  - Vá para **Subnets**, selecione uma sub-rede pública e clique em **Actions** > **Edit subnet settings**.
-  - Marque a opção **Enable auto-assign public IPv4 address** e depois clique em **Save**.
-  - Repita o processo para a outra sub-rede pública.
+- Selecione duas ***Availability Zones (AZs)** e um **NAT Gateway**.
+- Finalize a criação clicando em **Create VPC**.
 
-### 2. Configuração e Criação dos Security Groups
-- Para este projeto serão usados dois grupos de segurança, um padrão criado junto com a VPC e outro que será usado apenas com o Load Balancer.
+### 2. Criação dos Security Groups
+- O projeto requer quatro grupos de segurança:
+  - **web**: acessso às instâncias.
+  - **clb**: acesso para o Load Balancer.
+  - **rds**: acesso ao banco de dados.
+  - **efs**: acesso ao sistema de arquivos.  
 
-1. **Security Group Padrão**
-- No menu lateral, vá para **Security Groups** e selecione o grupo associado à VPC criada.
-- Configure as regras de entrada nas seguintes portas:  
-  - **SSH (porta 22)**: acesso restrito ao seu IP.
-  - **Custom TCP (porta 2049 - NFS)**: acesso restrito ao IPv4 CIDR da sua VPC.
+- Após a criação, edite as regras da seguinte maneira:
 
-- Nas regras de saída, permita **All Traffic** com o destino `0.0.0.0/0`.
+1. **Security Group Web**
+- **Regras de entrada**: configure uma regra HTTP na porta 80, permitindo tráfego de origem do grupo de segurança do Load Balancer.
+- **Regras de saída**: 
+  - **All Traffic** com o destino `0.0.0.0/0`.
+  - **HTTP** na porta 80, com o destino para o grupo de segurança do Load Balancer.
+  - **MYSQL/Aurora** na porta 3306, com o destino para o grupo de segurança do RDS.
+  - **NFS** na porta 2049, com o destino para o grupo de segurança do EFS.
 
 2. **Security Group do Load Balancer**
-- Crie um novo **Security Group** para o Load Balancer clicando em **Create security group**:
-  - Personalize o nome e a descrição.
-  - **Regras de entrada**: configure uma regra HTTP na porta 80, permitindo tráfego de origem `0.0.0.0/0`.
-  - **Regras de saída**: permita **All Traffic** com o destino `0.0.0.0/0`.
-  - Edite as regras de entrada do grupo de segurança padrão, permitindo tráfego **HTTP** na porta 80, mas apenas a partir do grupo de segurança criado para o Load Balancer.
+- **Regras de entrada**: configure uma regra **HTTP** na porta 80, permitindo tráfego de origem `0.0.0.0/0`.
+- **Regras de saída**: configure uma regra **HTTP** na porta 80, com o destino para o grupo de segurança Web.
+
+3. **Security Group do RDS**
+- **Regras de entrada**: configure uma regra **MYSQL/Aurora** na porta 3306, permitindo tráfego de origem do grupo de segurança Web.
+- **Regras de saída**: configure uma regra **MYSQL/Aurora** na porta 3306, com o destino para o grupo de segurança Web.
+
+4. **Security Group do EFS**
+- **Regras de entrada**: configure uma regra **NFS** na porta 2049, permitindo tráfego de origem do grupo de segurança Web.
+- **Regras de saída**: configure uma regra **NFS** na porta 2049, com o destino para o grupo de segurança Web.
 
 ### 3. Criação do Banco de Dados no RDS 
 - Vá para **Aurora and RDS** > **Databases** e clique em **Create database**.
@@ -51,144 +65,36 @@ Este projeto utiliza diversas tecnologias:
   - **Templates**: selecione **Free tier**.
   - Personalize o nome do banco de dados e o nome de usuário, definindo uma senha. 
   - Escolha a instância **db.t3.micro**. 
-  - **Connectivity**: selecione **Don’t connect to an EC2 compute resource** e associe à VPC criada.
+  - **Connectivity**: selecione **Don’t connect to an EC2 compute resource**, associe ao grupo de segurança do RDS e à VPC criada.
   - **Additional configuration**: defina um nome para a base de dados.
 
 - Finalize clicando em **Create database**.
 
+- Caso não consiga selecionar o grupo de segurança do RDS durante a criação e o banco de dados ficar vinculado ao grupo de segurança padrão, altere as regras de entrada e saída desse grupo para as regras do grupo do RDS.
+
 ### 4. Criação do Sistema de Arquivos EFS
 - Acesse a seção **EFS** e clique em **Create file system**.
-- Selecione a **VPC** criada e as duas sub-redes públicas. 
-- Finalize a criação clicando em **Create file system**.
+- Selecione a VPC criada e as duas sub-redes privadas. 
+- Finalize  clicando em **Create file system**.
 
-### 5. Criação de uma Instância EC2
-- No Console EC2, clique em **Launch instance**.
-- Adicione as tags necessárias e utilize a **Amazon Linux 2023 AMI**.
-- Crie e vincule uma chave SSH **.pem** para acesso à instância.
-- Associe a instância à VPC criada, colocando-a em uma sub-rede pública.
-- Associe a instância ao **Security Group** padrão.
+### 5. **Criação do Launch Template para Lançamento das Instâncias**
+- Vá para a seção **EC2** e acesse **Launch Templates** > **Create launch template**.
+- Personalize com o nome e a descrição.
+- Selecione **Amazon Linux 2023 AMI** e **t2.micro**.
+- Vincule o grupo de segurança Web e adicione as tags necessárias.
 - Use o script de **User Data** disponível neste repositório, fazendo as seguintes alterações:
   - Substitua `<efs file-system-id>` pelo ID do sistema de arquivos EFS.
   - Substitua `<RDS-ENDPOINT>` pelo endpoint do banco de dados.
   - Substitua `<db_name>`, `<db_user>` e `<db_password>` pelas credenciais do banco de dados.
 
-- Finalize clicando em **Launch instance**.
-- Repita o processo para criar uma segunda instância em uma sub-rede pública em outra Zona de Disponibilidade.
+- Finalize clicando em **Create launch template**.
 
-### 6. Conectando as Instâncias ao Banco de Dados 
-- Vá para **Aurora and RDS** > **Databases** e selecione o banco de dados criado.
-- Na seção **Connectivity & security**, role até **Connected compute resources**. 
-- Clique em **Actions** > **Set up EC2 connection**, escolha a instância criada e finalize clicando em **Continue**. 
-- Repita esse processo para conectar a outra instância EC2.
-
-### 7. Etapa Alternativa: Instalação Manual do WordPress 
-Caso prefira instalar o WordPress manualmente, siga os passos abaixo:
-
-1. **Acesso à Instância EC2 via SSH**
-- Acesse a instância via SSH utilizando o **Visual Studio Code**: 
-  - Selecione a instância e clique em **Connect**. 
-  - Copie o comando SSH exbido e cole-o no terminal do VS Code. Substitua `"nome_da_chave"` pelo caminho correto da chave SSH.
-
-2. **Instalação do Docker**
-- Atualize os pacotes da instância:
-
-  ```bash
-    sudo yum update -y
-  ```
-
-- Instale o Docker:
-
-  ```bash
-  sudo yum install -y docker
-  ```
-
-- Inicie o Docker:
-
-  ```bash
-  sudo service docker start
-  ```
-
-- Adicione o `ec2-user` ao grupo do Docker, para que os comandos sejam executados sem o uso do `sudo`:
-
-  ```bash
-  sudo usermod -a -G docker ec2-user
-  ```
-
-- Efetue logout e login novamente para aplicar as permissões e verifique a instalação:
-
-  ```bash
-  docker ps
-  ```
-
-3. **Instalação do Docker Compose**
-- Instale o Docker Compose:
-
-  ```bash
-  sudo curl -SL https://github.com/docker/compose/releases/download/v2.34.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
-  sudo chmod +x /usr/local/bin/docker-compose
-  ```
-
-- Verifique a instalação:
-
-  ```bash
-  docker-compose --version
-  ```
-
-4. **Configuração do Ponto de Montagem**
-- Instale o cliente Amazon EFS:
-
-  ```bash
-  sudo yum install -y amazon-efs-utils
-  ```
-
-- Crie o ponto de montagem:
-
-  ```bash
-  sudo mkdir efs
-  ```
-
-- Monte o EFS:
-
-  ```bash
-  sudo mount -t efs <efs file-system-id>:/ /home/ec2-user/efs/
-  ```
-
-- Use o ID do sistema de arquivos que você está montando no local `<efs file-system-id>`.
-
-5. **Instalação do WordPress**
-- Baixe a imagem oficial do WordPress:
-
-  ```bash
-  docker pull wordpress
-  ```
-
-- Crie um diretório para o projeto:
-
-  ```bash
-  mkdir projeto-docker
-  cd projeto-docker
-  ```
-
-- Crie o arquivo `docker-compose.yml` usando o script que está neste repositório e configure as variáveis de ambiente:
-
-  ```bash
-  nano docker-compose.yml
-  ```
-
-- Execute o WordPress com Docker Compose:
-
-  ```bash
-  docker-compose up -d
-  ```
-
-
-### 8. Criação do Load Balancer
-- Acesse novamente o Console da AWS e vá para a seção **EC2** > **Load Balancers**.
-- Clique em **Create load balancer** e escolha **Classic Load Balancer**. 
+### 6. Criação do Load Balancer
+- No menu lateral, acesse **Load Balancers** > **Create load balancer** > **Classic Load Balancer**. 
 - Configure as opções:
   - **Scheme**: Internet-facing.
-  - **VPC**: escolha a VPC onde as suas instâncias EC2 estão localizadas.
-  - **Availability Zones**: selecione as zonas de disponibilidade e as sub-redes públicas usadas pelas instâncias EC2.
+  - **VPC**: escolha a VPC criada.
+  - **Availability Zones**: selecione as zonas de disponibilidade e as sub-redes públicas.
   - **Security groups**: associe ao grupo de segurança criado para o Load Balancer.
   - **Listeners and routing**: defina para HTTP na porta 80.
   - **Health Checks**: configure os parâmetros da seguinte maneira:
@@ -202,31 +108,47 @@ Caso prefira instalar o WordPress manualmente, siga os passos abaixo:
     - **Healthy threshold**: 3. 
     - **Unhealthy threshold**: 2.
 
-- Associe o Load Balancer às instâncias EC2 e clique em **Create load balancer** para finalizar.
-- Após a criação, na seção **Details**, copie o **DNS name** e cole-o no navegador para acessar a aplicação WordPress.
+- Finalize clicando em **Create load balancer**.
 
-### 9. Criação do Auto Scaling Group
-1. **Criação do Launch Template**
-- No menu lateral, acesse **Launch Templates** > **Create launch template**.
-- Personalize com o nome e a descrição.
-- Selecione a **Amazon Linux 2023 AMI** e **t2.micro**, para que as instâncias geradas fiquem iguais às criadas anteriormente.
-- Vincule a mesma chave SSH **.pem** e o **Security Group** padrão.
-- Adicione as tags necessárias.
-- Cole o script de **User Data** e faça as alterações necessárias, conforme feito anteriormente.
-- Finalize a criação clicando em **Create launch template**.
-
-2. **Criação do Auto Scaling Group**
-- No menu lateral, acesse **Auto Scaling Groups** > **Create Auto Scaling group**.
+### 7. Criação do Auto Scaling Group
+- Acesse **Auto Scaling Groups** > **Create Auto Scaling group**.
 - Selecione o **Launch Template** criado anteriormente.
-- Selecione a VPC e as duas sub-redes públicas.
-- Escolha o **Load Balancer** criado e marque a opção **Turn on Elastic Load Balancing health checks**.
+- Configure a VPC, sub-redes privadas, e associe o Load Balancer.
+- Marque a opção **Turn on Elastic Load Balancing health checks**.
 - Configure a capacidade da seguinte maneira:
   - **Desired capacity**: 2.
   - **Min desired capacity**: 2.
   - **Max desired capacity**: 4.
 
-- Selecione **Target tracking scaling policy** e mude **Target value** para 80. 
-- Continue seguindo e finalize a criação clicando em **Create Auto Scaling group**. 
+- Selecione **No scaling policies**. 
+- Marque a opção **Enable group metrics collection within CloudWatch**.
+- Adicone as tags que desejar.
+- Finalize clicando em **Create Auto Scaling group**. 
 
+### 8. Acesso ao WordPress
+- Vá para a seção **Instances** e aguarde a criação das instâncias.
+- Após a criação, acesse o Load Balancer e verifique o status das instâncias na seção **Target instances**.
+- Se estiverem com o status **In-service**, copie o **DNS name** e cole-o no navegador para acessar a aplicação WordPress.
+- Faça a configuração e depois o login no WordPress para acessar a página inicial.
 
+## 9. Criação de Alarme no CloudWatch
+- Selecione o Auto Scaling Group criado e acesse **Automatic scaling** > **Create dynamic scaling policy**.
+- Configure da seguinte maneira:
+  - **Policy type**: Simple scaling.
+  - **Scaling policy name**: personalize com um nome.
+  - **Take the action**: selecione **Add**, com valor **2**.
 
+- Finalize clicando em **Create**.
+- Navegue até a seção **ClouWatch**, em **Alarms**, clique em **In alarm** e depois em **Create alarm**.
+- Clique em **Select metric** > **EC2** > **By Auto Scaling Group**.
+- Selecione a métrica **CPUUtilization** e clique em **Select metric**.
+- Em **Whenever CPUUtilization is...**, selecione **Greater/Equal** e digite 80 em **than...**.
+- Em **Notification**, clique em **Remove** para excluir a notificação. 
+- Clique em **Auto Scaling action**, selecione o Auto Scaling Group criado.
+- Dê um nome para o alarme e finalize clicando em **Create alarm**.
+
+---
+
+## Conclusão
+
+O projeto cria uma infraestrutura bem escalável e eficiente para rodar o WordPress na AWS, usando Docker e vários serviços da AWS, como EC2, RDS, EFS e Auto Scaling. Com a configuração de VPCs, grupos de segurança e balanceamento de carga, garantimos que a aplicação fique segura, disponível e possa crescer conforme a demanda. E com a integração do CloudWatch, é possível automatizar ajustes de capacidade das instâncias, otimizando os recursos e ajudando a reduzir os custos.
