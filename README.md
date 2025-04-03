@@ -26,8 +26,10 @@ São utilizadas diversas tecnologias:
 - Acesse o Console AWS e vá para a seção **VPC**. 
 - Clique em **Create VPC** e selecione a opção **VPC and more**. 
 - Crie uma VPC com **2 sub-redes públicas** e **2 sub-redes privadas**.
-- Selecione duas ***Availability Zones (AZs)** e um **NAT Gateway**.
+- Selecione duas **Availability Zones (AZs)** e um **NAT Gateway**.
 - Finalize a criação clicando em **Create VPC**.
+
+![VPC](/Prints%20de%20telas/VPC.png)
 
 ### 2. Criação dos Security Groups
 - O projeto requer quatro grupos de segurança:
@@ -35,6 +37,10 @@ São utilizadas diversas tecnologias:
   - **clb**: acesso para o Load Balancer.
   - **rds**: acesso ao banco de dados.
   - **efs**: acesso ao sistema de arquivos.  
+
+- Vá até a **Security groups** > **Create security group** e crie quatro grupos novos com os nomes acima.
+
+![SGs](/Prints%20de%20telas/SGs.png)
 
 - Após a criação, edite as regras da seguinte maneira:
 
@@ -70,12 +76,15 @@ São utilizadas diversas tecnologias:
 
 - Finalize clicando em **Create database**.
 
-- Caso não consiga selecionar o grupo de segurança do RDS durante a criação e o banco de dados ficar vinculado ao grupo de segurança padrão, altere as regras de entrada e saída desse grupo para as regras do grupo do RDS.
+![RDS](/Prints%20de%20telas/RDS.png)
 
 ### 4. Criação do Sistema de Arquivos EFS
 - Acesse a seção **EFS** e clique em **Create file system**.
-- Selecione a VPC criada e as duas sub-redes privadas. 
-- Finalize  clicando em **Create file system**.
+- Selecione a VPC criada e clique em **Customize**
+- Escolha as duas sub-redes privadas e o grupo de segurança do EFS.
+- Finalize clicando em **Create**.
+
+![EFS](/Prints%20de%20telas/EFS.png)
 
 ### 5. **Criação do Launch Template para Lançamento das Instâncias**
 - Vá para a seção **EC2** e acesse **Launch Templates** > **Create launch template**.
@@ -88,6 +97,8 @@ São utilizadas diversas tecnologias:
   - Substitua `<db_name>`, `<db_user>` e `<db_password>` pelas credenciais do banco de dados.
 
 - Finalize clicando em **Create launch template**.
+
+![Template](/Prints%20de%20telas/Template.png)
 
 ### 6. Criação do Load Balancer
 - No menu lateral, acesse **Load Balancers** > **Create load balancer** > **Classic Load Balancer**. 
@@ -104,7 +115,7 @@ São utilizadas diversas tecnologias:
 
   - **Advanced health check settings**: defina os seguintes parâmetros:
     - **Response timeout**: 5 segundos.
-    - **Interval**: 30 segundos.
+    - **Interval**: 15 segundos.
     - **Healthy threshold**: 3. 
     - **Unhealthy threshold**: 2.
 
@@ -112,8 +123,9 @@ São utilizadas diversas tecnologias:
 
 ### 7. Criação do Auto Scaling Group
 - Acesse **Auto Scaling Groups** > **Create Auto Scaling group**.
-- Selecione o **Launch Template** criado anteriormente.
-- Configure a VPC, sub-redes privadas, e associe o Load Balancer.
+- Dê um nome e selecione o **Launch Template** criado anteriormente.
+- Configure a VPC e as sub-redes privadas.
+- Associe o Load Balancer criado no passo anterior.
 - Marque a opção **Turn on Elastic Load Balancing health checks**.
 - Configure a capacidade da seguinte maneira:
   - **Desired capacity**: 2.
@@ -125,13 +137,25 @@ São utilizadas diversas tecnologias:
 - Adicone as tags que desejar.
 - Finalize clicando em **Create Auto Scaling group**. 
 
+![ASG](/Prints%20de%20telas/ASG.png)
+
 ### 8. Acesso ao WordPress
 - Vá para a seção **Instances** e aguarde a criação das instâncias.
+
+![Instancias criadas](/Prints%20de%20telas/Instancias%20criadas.png)
+
 - Após a criação, acesse o Load Balancer e verifique o status das instâncias na seção **Target instances**.
 - Se estiverem com o status **In-service**, copie o **DNS name** e cole-o no navegador para acessar a aplicação WordPress.
+
+![Saude instancias](/Prints%20de%20telas/Saude%20instancias.png)
+
+![WP](/Prints%20de%20telas/WP.png)
+
 - Faça a configuração e depois o login no WordPress para acessar a página inicial.
 
-## 9. Criação de Alarme no CloudWatch
+![WP login](/Prints%20de%20telas/WP%20login.png)
+
+### 9. Criação de Alarme no CloudWatch
 - Selecione o Auto Scaling Group criado e acesse **Automatic scaling** > **Create dynamic scaling policy**.
 - Configure da seguinte maneira:
   - **Policy type**: Simple scaling.
@@ -146,6 +170,8 @@ São utilizadas diversas tecnologias:
 - Em **Notification**, clique em **Remove** para excluir a notificação. 
 - Clique em **Auto Scaling action**, selecione o Auto Scaling Group criado.
 - Dê um nome para o alarme e finalize clicando em **Create alarm**.
+
+![Alarme](/Prints%20de%20telas/Alarme.png)
 
 ---
 
