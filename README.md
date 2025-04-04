@@ -144,7 +144,7 @@ São utilizadas diversas tecnologias:
 
 ![Instancias criadas](/Prints%20de%20telas/Instancias%20criadas.png)
 
-- Após a criação, acesse o Load Balancer e verifique o status das instâncias na seção **Target instances**.
+- Com as instâncias rodando, acesse o Load Balancer e verifique o status na seção **Target instances**.
 - Se estiverem com o status **In-service**, copie o **DNS name** e cole-o no navegador para acessar a aplicação WordPress.
 
 ![Saude instancias](/Prints%20de%20telas/Saude%20instancias.png)
